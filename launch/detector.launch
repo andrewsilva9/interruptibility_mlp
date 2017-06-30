@@ -1,0 +1,7 @@
+<launch>
+	<arg name="feature_vector_sub_topic_name" default="/data_filter/feature_vector" />
+
+	<node pkg="int_estimator" type="MLPEstimator.py" name="MLPEstimator" output="screen">
+		<param name="feature_vector_sub_topic_name" type="string" value="$(arg feature_vector_sub_topic_name)" />
+	</node>
+</launch>

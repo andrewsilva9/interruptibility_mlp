@@ -1,0 +1,24 @@
+<package>
+  <name>int_estimator</name>
+  <version>0.0.1</version>
+  <description>
+    This package provides interruptibility estimation via scikit-learn's MLPClassifier
+  </description>
+  <maintainer email="asilva9@gatech.edu">Andrew Silva</maintainer>
+  <url type="website">https://github.gatech.edu/andrewsilva9/</url>
+  <license>MIT</license>
+  <author>Andrew Silva</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>interruptibility_msgs</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>interruptibility_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
+
+</package>
