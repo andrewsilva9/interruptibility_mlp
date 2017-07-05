@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 import rospy
 from int_estimator.msg import Estimate
+from interruptibility_msgs.msg import FeatureVector
 
 # Debug Helpers
 FAIL_COLOR = '\033[91m'
@@ -101,8 +102,10 @@ class MLPEstimator(object):
 
     def run(self,
             pub_object_topic='~predictions'):
-        rospy.Subscriber(self.feature_vector_sub_topic_name, FeatureVector, self.make_estimation) # subscribe to sub_image_topic and callback parse
-        self.pred_pub = rospy.Publisher(pub_object_topic, Estimate, queue_size=2) # objects publisher
+        # subscribe to sub_image_topic and callback parse
+        rospy.Subscriber(self.feature_vector_sub_topic_name, FeatureVector, self.make_estimation)
+        # objects publisher
+        self.pred_pub = rospy.Publisher(pub_object_topic, Estimate, queue_size=2)
         rospy.spin()
 
 if __name__ == '__main__':
