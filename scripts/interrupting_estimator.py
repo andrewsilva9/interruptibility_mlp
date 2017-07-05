@@ -9,6 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 import rospy
+import rospkg
 from int_estimator.msg import Estimate
 from interruptibility_msgs.msg import FeatureVector
 
@@ -35,8 +36,9 @@ class MLPEstimator(object):
 
     def __init__(self):
         rospy.init_node('MLPEstimator')
-        self.clf = joblib.load('/home/asilva/PycharmProjects/int_estimator/scripts/MLPrel.pkl')
-        self.scaler = joblib.load('/home/asilva/PycharmProjects/int_estimator/scripts/scaler.pkl')
+        pkg_path = rospkg.RosPack().get_path('int_estimator')
+        self.clf = joblib.load(pkg_path+'/scripts/MLPrel.pkl')
+        self.scaler = joblib.load(pkg_path+'/scripts/scaler.pkl')
         self.debug = rospy.get_param('~debug', default=False)
         self.feature_vector_sub_topic_name = rospy.get_param('~feature_vector_sub_topic_name',
                                                              default='/data_filter/feature_vector')
