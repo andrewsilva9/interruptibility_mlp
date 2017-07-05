@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import pickle
 import json
 import os
@@ -34,8 +35,8 @@ class MLPEstimator(object):
 
     def __init__(self):
         rospy.init_node('MLPEstimator')
-        self.clf = joblib.load('MLPrel.pkl')
-        self.scaler = joblib.load('scaler.pkl')
+        self.clf = joblib.load('/home/asilva/PycharmProjects/int_estimator/scripts/MLPrel.pkl')
+        self.scaler = joblib.load('/home/asilva/PycharmProjects/int_estimator/scripts/scaler.pkl')
         self.debug = rospy.get_param('~debug', default=False)
         self.feature_vector_sub_topic_name = rospy.get_param('~feature_vector_sub_topic_name',
                                                              default='/data_filter/feature_vector')
