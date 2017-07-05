@@ -61,6 +61,11 @@ class MLPEstimator(object):
 
         x_in.append(feature_vector.gaze_boolean.gaze_at_robot)            # 10
 
+        # TODO: undo the missing data numbers from the data filter, set to -5
+        for val in range(len(x_in)):
+            if x_in[val] >= 1.7e300:
+                x_in[val] = -5
+
         x_in.append(0)  # book 11
         x_in.append(0)  # bottle 12
         x_in.append(0)  # bowl 13
@@ -102,7 +107,7 @@ class MLPEstimator(object):
         self.pred_pub.publish(msg)
 
     def run(self,
-            pub_object_topic='~predictions'):
+            pub_object_topic='~interruptibilities'):
         # subscribe to sub_image_topic and callback parse
         rospy.Subscriber(self.feature_vector_sub_topic_name, FeatureVector, self.make_estimation)
         # objects publisher
