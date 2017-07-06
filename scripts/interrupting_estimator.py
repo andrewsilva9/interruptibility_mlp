@@ -30,8 +30,8 @@ def eprint(error):
 
 
 class MLPEstimator(object):
-    """Poses
-    This class takes in image data and finds / annotates objects within the image
+    """
+    This class makes interruptibility estimations based on incoming feature vectors
     """
 
     def __init__(self):
