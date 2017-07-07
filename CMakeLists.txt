@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     DIRECTORY msg
     FILES
-    Estimate.msg
 )
 
 add_service_files(
@@ -21,6 +20,7 @@ add_service_files(
 
 generate_messages(
   DEPENDENCIES
+  geometry_msgs
   sensor_msgs
   interruptibility_msgs
   std_msgs

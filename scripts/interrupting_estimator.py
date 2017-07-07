@@ -4,14 +4,17 @@ import json
 import os
 import math
 import sys
+import time
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 import rospy
 import rospkg
-from int_estimator.msg import Estimate
-from interruptibility_msgs.msg import FeatureVector
+from interruptibility_msgs.msg import FeatureVector, Interruptibility
+from interruptibility_srvs.srv import InterruptibilityAllQuery, InterruptibilityAllQueryResponse
+from geometry_msgs.msg import PointStamped
+
 
 # Debug Helpers
 FAIL_COLOR = '\033[91m'
@@ -37,18 +40,27 @@ class MLPEstimator(object):
     def __init__(self):
         rospy.init_node('MLPEstimator')
         pkg_path = rospkg.RosPack().get_path('int_estimator')
-        self.clf = joblib.load(pkg_path+'/scripts/MLPrel.pkl')
-        self.scaler = joblib.load(pkg_path+'/scripts/scaler.pkl')
+        clf_path = rospy.get_param('~model_filename', default=pkg_path+'/scripts/MLPrel.pkl')
+        scal_path = rospy.get_param('~scaler_filename', default=pkg_path+'/scripts/scaler.pkl')
+        self.clf = joblib.load(clf_path)
+        self.scaler = joblib.load(scal_path)
         self.debug = rospy.get_param('~debug', default=False)
-        self.feature_vector_sub_topic_name = rospy.get_param('~feature_vector_sub_topic_name',
+        self.feature_vector_sub_topic_name = rospy.get_param('~features_topic_name',
                                                              default='/data_filter/feature_vector')
+        self.service_handle = rospy.Service("~interruptibilities", InterruptibilityAllQuery, self.make_predictions)
+        self.data_storage_duration = rospy.get_param('~data_storage_duration', default=4.0)
+        self.model_pos_frame = rospy.get_param('~model_pos_frame', default=None)
+        self.should_interpolate = rospy.get_param('~should_interpolate', default=False)
+        self.headers_in_scene = {}
+        self.people_in_scene = {}
+        self.times_added = {}
+        self.positions_in_scene = {}
 
-    def make_estimation(self, feature_vector):
+    def buffer_data(self, feature_vector):
         """
         Take feature vectors and run them through the MLP classifier
         """
 
-        header = feature_vector.header
         x_in = []
         x_in.append(feature_vector.pose.right_wrist_angle)                # 0
         x_in.append(feature_vector.pose.right_elbow_angle)                # 1
@@ -98,22 +110,45 @@ class MLPEstimator(object):
             else:
                 x_in[foi + 8] += 1
 
-        x_in = self.scaler.transform(x_in)
-        pred = self.clf.predict(x_in)
+        # TODO: save the person in self.people_in_scene
+        self.people_in_scene[feature_vector.person_id] = x_in
+        self.times_added[feature_vector.person_id] = time.time()
+        self.headers_in_scene[feature_vector.person_id] = feature_vector.header
+        self.positions_in_scene[feature_vector.person_id] = feature_vector.body_position.position
+        # TODO: clean people out after 4 seconds
+        self.clean_people()
+        # TODO: Do I need to propagate specific values?
 
-        msg = Estimate()
-        msg.header = header
-        msg.person_id = feature_vector.person_id
-        msg.prediction = pred
+    def clean_people(self):
+        for person in self.people_in_scene:
+            # Haven't seen the person in at least 4 seconds
+            if time.time() - self.times_added[person] > self.data_storage_duration:
+                del self.people_in_scene[person]
+                del self.headers_in_scene[person]
+                del self.positions_in_scene[person]
+                del self.times_added[person]
 
-        self.pred_pub.publish(msg)
+    def make_predictions(self):
+        res = InterruptibilityAllQueryResponse()
+        for person in self.people_in_scene:
+            x_in = self.scaler.transform(self.people_in_scene[person])
+            prediction = self.clf.predict(x_in)
 
-    def run(self,
-            pub_object_topic='~interruptibilities'):
+            pnt = PointStamped()
+            pnt.header = self.headers_in_scene[person]
+            pnt.point = self.positions_in_scene[person]
+
+            msg = Interruptibility()
+            msg.header = self.headers_in_scene[person]
+            msg.person_id = person
+            msg.estimate = prediction
+            msg.position = pnt
+            res.interruptibilities.append(msg)
+        return res
+
+    def run(self):
         # subscribe to sub_image_topic and callback parse
-        rospy.Subscriber(self.feature_vector_sub_topic_name, FeatureVector, self.make_estimation)
-        # objects publisher
-        self.pred_pub = rospy.Publisher(pub_object_topic, Estimate, queue_size=2)
+        rospy.Subscriber(self.feature_vector_sub_topic_name, FeatureVector, self.buffer_data)
         rospy.spin()
 
 if __name__ == '__main__':
